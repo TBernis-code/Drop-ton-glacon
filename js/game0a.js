@@ -1,3 +1,6 @@
+
+
+//import gsap from "./gsap.min.js";
 class Circle {
     constructor(color, radius, v) {
         this.radius = radius;
@@ -5,7 +8,7 @@ class Circle {
 
         let circle = new PIXI.Graphics();
         circle.beginFill(color);
-        circle.drawCircle(0, 0, radius);
+        circle.drawCircle(player.getPosX() + 200, player.getPosY() - 250, radius);
         circle.endFill();
         circle.x = radius;
         circle.y = radius;
@@ -27,69 +30,82 @@ class Circle {
     }
 }
 
+const time = 1.0;
+
+class Rectangle {
+    constructor(color, radius, v) {
+        this.v = v;
+        this.radius = radius;
+
+        let rectangle = new PIXI.Graphics();
+        rectangle.beginFill(color);
+        rectangle.drawRect(200, -250, 100, 50);
+        rectangle.endFill();
+        rectangle.x = radius;
+        rectangle.y = radius;
+        app.stage.addChild(rectangle);
+
+        gsap.to(rectangle, { x: -200, duration: time, repeat: -1, yoyo: true, });
+
+        this.rectangle = rectangle;
+    }
+
+    remove() {
+        app.stage.removeChild(this.rectangle);
+    }
+
+    collide(other) {
+        let dx = other.circle.x - this.rectangle.x;
+        let dy = other.circle.y - this.rectangle.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+
+        return dist < (2 + other.radius);
+    }
+}
+
 class Monster extends Circle {
     update() {
         this.circle.x += this.v.x;
         this.circle.y += this.v.y;
+    }
 
-        if (this.circle.x >= w-this.radius) {
-            shake("right");
-            this.v.x *= -1;
-        }
-
-        else if (this.circle.x <= this.radius) {
-            shake("left");
-            this.v.x *= -1;
-        }
-
-        if (this.circle.y >= h-this.radius) {
-            shake("down");
-            this.v.y *= -1;
-        }
-        else if (this.circle.y <= this.radius) {
-            shake("up");
-            this.v.y *= -1;
-        }
+    setPos() {
+        this.circle.x = player.getPosX();
+        this.circle.y = player.getPosY();
     }
 }
 
-class Player extends Circle {
+class Player extends Rectangle {
     constructor(color, radius, v) {
         super(color, radius, v);
         this.reset();
     }
 
+    getPosX() {
+        return this.rectangle.x;
+    }
+
+    getPosY() {
+        return this.rectangle.y;
+    }
+
+
     reset() {
-        this.circle.x = w/2;
-        this.circle.y = h/2;
-        this.speed = 2;
+        this.rectangle.x = w/2;
+        this.rectangle.y = h/2;
+        this.speed = 3;
     }
 
     update() {
-        let x = this.circle.x + this.v.x ;
-        let y = this.circle.y + this.v.y + 100;
+        let x = this.rectangle.x + this.v.x ;
+        let y = this.rectangle.y + this.v.y ;
 
-        this.circle.x = Math.min(Math.max(x, this.radius), w-this.radius);
-        this.circle.y = Math.min(Math.max(y, this.radius), w-this.radius);
+        this.rectangle.x = Math.min(Math.max(x, this.radius), w-this.radius);
+        this.rectangle.y = Math.min(Math.max(y, this.radius), w-this.radius);
 
-        
-        monsters.forEach(m => {
-            if (this.collide(m)) {
-                reset();
-                return;
-            }
-        });
 
         // // coin
-        if (this.collide(coin)) {
-            updateCoins(coins+1);
-            coin.random();
-            addMonster();
-            this.speed = Math.min(4, this.speed + 0.2);
-            ClickEvent("coins");            
-
-            return;
-        }
+        
     }
 }
 
@@ -114,11 +130,12 @@ function shake(className) {
 }
 
 function addMonster() {
-    monsters.push(new Monster(0x79a3b1, Math.random()*10 + 10, {x:2 + Math.random(), y:2 + Math.random()}));
+    monsters.push(new Monster(0x79a3b1, Math.random()*10 + 10, {x: Math.random(), y:10}));
 }
 
 function onkeydown(ev) {
     switch (ev.key) {
+        /*
         case "ArrowLeft":
         case "a":
             player.v.x = -player.speed*2; 
@@ -130,13 +147,14 @@ function onkeydown(ev) {
             player.v.x = player.speed*2;
             pressed['right'] = true;
             break;
-/*
+            */
+
         case "ArrowUp":
         case "w":
-            player.v.y = -player.speed;
+            this.addMonster();
             pressed['up'] = true;
             break;
-
+/*
         case "ArrowDown": 
         case "s":
             player.v.y = player.speed;
@@ -147,6 +165,7 @@ function onkeydown(ev) {
 }
 function onkeyup(ev) {
     switch (ev.key) {
+         /*
         case "ArrowLeft": 
         case "a":
             player.v.x = pressed['right']?player.speed:0; 
@@ -158,13 +177,15 @@ function onkeyup(ev) {
             player.v.x = pressed['left']?-player.speed:0; 
             pressed['right'] = false;
             break;
-/*
+
+            */
+
         case "ArrowUp": 
         case "w":
-            player.v.y = pressed['down']?player.speed:0; 
+            this.addMonster();
             pressed['up'] = false;
             break;
-
+/*
         case "ArrowDown": 
         case "s":
             player.v.y = pressed['up']?-player.speed:0; 
@@ -177,7 +198,7 @@ function onkeyup(ev) {
 
 function setupControls() {
     window.addEventListener("keydown", onkeydown);
-    window.addEventListener("keyup", onkeyup);
+    //window.addEventListener("keyup", onkeyup);
 }
 
 function reset() {
@@ -186,7 +207,7 @@ function reset() {
     });
 
     monsters = [];
-    addMonster();
+    //addMonster();
     player.reset();
     coin.random();
     updateCoins(0);
@@ -199,10 +220,11 @@ function updateCoins(num) {
 
 function gameLoop() {
     player.update();
-    coin.update();
+    //coin.update();
     monsters.forEach(c => {
         c.update();
     });
+    //this.addMonster();
 }
 
 // resize
