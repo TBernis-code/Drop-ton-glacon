@@ -1,184 +1,274 @@
-class Circle {
+//import gsap from "./gsap.min.js";
+class Glacon {
     constructor(color, radius, v) {
         this.radius = radius;
         this.v = v;
 
-        let circle = new PIXI.Graphics();
-        circle.beginFill(color);
-        circle.drawCircle(0, 0, radius);
-        circle.endFill();
-        circle.x = radius;
-        circle.y = radius;
-        app.stage.addChild(circle);
 
-        this.circle = circle;
+        let glacon = new PIXI.Sprite.from("img/Glacon.png");
+        glacon.anchor.set(0.5);
+        glacon.x = player.getPosX();
+        glacon.y = player.getPosY();
+        glacon.width = 70;
+        glacon.height = 50;
+        app.stage.addChild(glacon);
+
+        this.glacon = glacon;
     }
 
     remove() {
-        app.stage.removeChild(this.circle);
+        console.log(monsters.length)
+        app.stage.removeChild(this.glacon);
+        monsters.pop();
+    }
+
+}
+
+let time = 3;
+
+class RectanglePlayer {
+    constructor(color, radius, v) {
+        this.v = v;
+        this.radius = radius;
+
+        let rectangle = new PIXI.Sprite.from("img/main2.png");
+        rectangle.anchor.set(0.5);
+        rectangle.x = 10;
+        rectangle.y = 100;
+        rectangle.width = 100;
+        rectangle.height = 60;
+        app.stage.addChild(rectangle);
+        gsap.to(rectangle, { x: 550, duration: time, repeat: -1, yoyo: true, });
+
+        /*
+        let rectangle = new PIXI.Graphics();
+        rectangle.beginFill(color);
+        rectangle.drawRect(200, -250, 100, 50);
+        rectangle.endFill();
+        rectangle.x = radius;
+        rectangle.y = radius;
+        app.stage.addChild(rectangle);
+*/
+        //gsap.to(rectangle, { x: -200, duration: time, repeat: -1, yoyo: true, });
+
+        this.rectangle = rectangle;
+    }
+
+    remove() {
+        app.stage.removeChild(this.rectangle);
     }
 
     collide(other) {
-        let dx = other.circle.x - this.circle.x;
-        let dy = other.circle.y - this.circle.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
+        let dx = other.glacon.x - this.rectangle.x;
+        let dy = other.glacon.y - this.rectangle.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
 
-        return dist < (this.radius + other.radius);
+        return dist < (2 + other.radius);
     }
 }
 
-class Monster extends Circle {
+class RectanglePlateau {
+    constructor(color, radius, v) {
+        this.v = v;
+        this.radius = radius;
+
+
+        let rectangle = new PIXI.Sprite.from("img/plateau.png");
+        rectangle.anchor.set(0.5);
+        rectangle.x = 550;
+        rectangle.y = 550;
+        rectangle.width = 100;
+        rectangle.height = 60;
+        app.stage.addChild(rectangle);
+        gsap.to(rectangle, { x: 50, duration: 3, repeat: -1, yoyo: true, });
+
+        this.rectangle = rectangle;
+    }
+
+    remove() {
+        app.stage.removeChild(this.rectangle);
+    }
+
+    collide(other) {
+        let ab = other.glacon.getBounds()
+        let bb = this.rectangle.getBounds()
+
+        return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
+    }
+}
+
+function boxesIntersect(a, b) {
+    var ab = a.getBounds();
+    var bb = b.getBounds();
+    return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
+}
+
+
+class Ground {
+    constructor(color, radius, v) {
+        this.v = v;
+        this.radius = radius;
+
+        let rectangle = new PIXI.Sprite.from("img/barre.png");
+        rectangle.anchor.set(0.5);
+        rectangle.x = 0;
+        rectangle.y = 600;
+        rectangle.width = 1500;
+        rectangle.height = 10;
+        app.stage.addChild(rectangle);
+
+        this.rectangle = rectangle;
+    }
+
+    remove() {
+        app.stage.removeChild(this.rectangle);
+    }
+
+    collide(other) {
+        let ab = other.glacon.getBounds()
+        let bb = this.rectangle.getBounds()
+
+        return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
+    }
+
     update() {
-        this.circle.x += this.v.x;
-        this.circle.y += this.v.y;
 
-        if (this.circle.x >= w-this.radius) {
-            shake("right");
-            this.v.x *= -1;
-        }
+        monsters.forEach(m => {
+            if (this.collide(m)) {
+                console.log('fail');
+                m.remove();
+                return;
+            }
+        });
 
-        else if (this.circle.x <= this.radius) {
-            shake("left");
-            this.v.x *= -1;
-        }
 
-        if (this.circle.y >= h-this.radius) {
-            shake("down");
-            this.v.y *= -1;
-        }
-        else if (this.circle.y <= this.radius) {
-            shake("up");
-            this.v.y *= -1;
-        }
     }
 }
 
-class Player extends Circle {
+
+class Monster extends Glacon {
+
+    update() {
+        this.glacon.x += this.v.x;
+        this.glacon.y += this.v.y;
+
+    }
+
+    setPos() {
+        this.glacon.x = player.getPosX();
+        this.glacon.y = player.getPosY();
+    }
+}
+
+class Player extends RectanglePlayer {
     constructor(color, radius, v) {
         super(color, radius, v);
         this.reset();
     }
 
+    getPosX() {
+        return this.rectangle.x;
+    }
+
+    getPosY() {
+        return this.rectangle.y;
+    }
+
+
     reset() {
-        this.circle.x = w/2;
-        this.circle.y = h/2;
-        this.speed = 2;
+        //this.rectangle.x = w/2;
+        //this.rectangle.y = h/2;
+        this.speed = 3;
     }
 
     update() {
-        let x = this.circle.x + this.v.x ;
-        let y = this.circle.y + this.v.y + 100;
+        let x = this.rectangle.x + this.v.x;
+        let y = this.rectangle.y + this.v.y;
 
-        this.circle.x = Math.min(Math.max(x, this.radius), w-this.radius);
-        this.circle.y = Math.min(Math.max(y, this.radius), w-this.radius);
+        this.rectangle.x = Math.min(Math.max(x, this.radius), w - this.radius);
+        this.rectangle.y = Math.min(Math.max(y, this.radius), w - this.radius);
 
-        
+
+        // // coin
+
+    }
+}
+
+class Plateau extends RectanglePlateau {
+    constructor(color, radius, v) {
+        super(color, radius, v);
+        this.reset();
+    }
+
+    getPosX() {
+        return this.rectangle.x;
+    }
+
+    getPosY() {
+        return this.rectangle.y;
+    }
+
+
+    reset() {
+        //this.rectangle.x = w/2;
+        //this.rectangle.y = h/2;
+        this.speed = 3;
+    }
+
+    update() {
+        let x = this.rectangle.x + this.v.x;
+        let y = this.rectangle.y + this.v.y;
+
+        this.rectangle.x = Math.min(Math.max(x, this.radius), w - this.radius);
+        this.rectangle.y = Math.min(Math.max(y, this.radius), w - this.radius);
+
         monsters.forEach(m => {
             if (this.collide(m)) {
-                reset();
+                const sound = new Howl({
+                    src: ['./sound/iceCube.mp3']
+                });
+                sound.play();
+                sound.volume(1.5);
+                updateCoins(coins + 1);
+                m.remove();
                 return;
             }
         });
 
-        // // coin
+
+        // // collision
+
         if (this.collide(coin)) {
-            updateCoins(coins+1);
+            updateCoins(coins + 1);
             coin.random();
             addMonster();
             this.speed = Math.min(4, this.speed + 0.2);
-            ClickEvent("coins");            
+            ClickEvent("coins");
 
             return;
         }
+
     }
 }
 
-class Coin extends Circle {
+class Coin extends Glacon {
     random() {
-        this.circle.x = this.radius + Math.random()*(w - 2*this.radius);
-        this.circle.y = this.radius + Math.random()*(h - 2*this.radius);
+        this.glacon.x = this.radius + Math.random() * (w - 2 * this.radius);
+        this.glacon.y = this.radius + Math.random() * (h - 2 * this.radius);
     }
 
     update() {
         let s = 1 + Math.sin(new Date() * 0.01) * 0.2;
-        this.circle.scale.set(s, s);
+        this.glacon.scale.set(s, s);
     }
 }
 
-
-function shake(className) {
-    return;
-
-   app.view.className = className;
-   setTimeout(()=>{app.view.className = ""}, 50);
-}
 
 function addMonster() {
-    monsters.push(new Monster(0x79a3b1, Math.random()*10 + 10, {x:2 + Math.random(), y:2 + Math.random()}));
+    monsters.push(new Monster(0x79a3b1, Math.random() * 10 + 10, { x: Math.random(), y: 10 }));
+    //new Monster(0x79a3b1, Math.random()*10 + 10, {x: Math.random(), y:10});
 }
 
-function onkeydown(ev) {
-    switch (ev.key) {
-        case "ArrowLeft":
-        case "a":
-            player.v.x = -player.speed*2; 
-            pressed['left'] = true;
-            break;
-
-        case "ArrowRight":
-        case "d":
-            player.v.x = player.speed*2;
-            pressed['right'] = true;
-            break;
-/*
-        case "ArrowUp":
-        case "w":
-            player.v.y = -player.speed;
-            pressed['up'] = true;
-            break;
-
-        case "ArrowDown": 
-        case "s":
-            player.v.y = player.speed;
-            pressed['down'] = true;
-            break;
-*/
-    }
-}
-function onkeyup(ev) {
-    switch (ev.key) {
-        case "ArrowLeft": 
-        case "a":
-            player.v.x = pressed['right']?player.speed:0; 
-            pressed['left'] = false;
-            break;
-
-        case "ArrowRight": 
-        case "d":
-            player.v.x = pressed['left']?-player.speed:0; 
-            pressed['right'] = false;
-            break;
-/*
-        case "ArrowUp": 
-        case "w":
-            player.v.y = pressed['down']?player.speed:0; 
-            pressed['up'] = false;
-            break;
-
-        case "ArrowDown": 
-        case "s":
-            player.v.y = pressed['up']?-player.speed:0; 
-            pressed['down'] = false;
-            break;
-
-            */
-    }
-}
-
-function setupControls() {
-    window.addEventListener("keydown", onkeydown);
-    window.addEventListener("keyup", onkeyup);
-}
 
 function reset() {
     monsters.forEach(m => {
@@ -186,7 +276,7 @@ function reset() {
     });
 
     monsters = [];
-    addMonster();
+    //addMonster();
     player.reset();
     coin.random();
     updateCoins(0);
@@ -198,11 +288,33 @@ function updateCoins(num) {
 }
 
 function gameLoop() {
-    player.update();
-    coin.update();
+    //player.update();
+    //coin.update();
+    plateau.update();
+    ground.update();
+    //monster.update();
+
     monsters.forEach(c => {
         c.update();
+        //if(boxesIntersect(plateau, c)) {
+        //console.log("collision");
+        //}
     });
+
+}
+
+function boxesIntersect(a, b) {
+    var ab = a.getBounds();
+    var bb = b.getBounds();
+    return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
+}
+
+function onClick() {
+    if (monsters.length >= 1) {
+        console.log('nope');
+    } else {
+        addMonster();
+    }
 }
 
 // resize
@@ -214,16 +326,37 @@ window.onresize = () => {
     reset();
 }
 
-let w = 512, h=512;
-let app = new PIXI.Application({width: w, height: h, antialias:true});
+let w = 512,
+    h = 512;
+let app = new PIXI.Application({ width: w, height: h, antialias: true });
+app.stage.addChild(PIXI.Sprite.from('img/background.jpg'));
+
+// Opt-in to interactivity
+app.stage.interactive = true;
+
+// Shows hand cursor
+app.stage.buttonMode = true;
+
+// Pointers normalize touch and mouse
+app.stage.on('pointerdown', onClick);
+
 let monsters = [];
 let pressed = {};
-let player = new Player(0xfcf8ec, 10, {x:0, y:0});
-let coin = new Coin(0xfcf8ec, 10, {x:0, y:0});
+let ground = new Ground(0xfcf8ec, 10, { x: 0, y: 0 });
+let player = new Player(0xfcf8ec, 10, { x: 0, y: 0 });
+let plateau = new Plateau(0xfcf8ec, 10, { x: 0, y: 0 });
+let coin = new Coin();
 let coins;
 
-app.renderer.backgroundColor = 0x456268;
+const sound = new Howl({
+    src: ['./sound/music_background.mp3']
+});
+sound.play();
+sound.volume(0.5);
+
+const texture = PIXI.Texture.from('img/background.jpg');
+const background = new PIXI.Sprite(texture);
+app.renderer.background = background;
 document.querySelector("div#canvas").appendChild(app.view);
-setInterval(gameLoop, 1000/60);
-setupControls();
+setInterval(gameLoop, 1000 / 60);
 window.onresize();
