@@ -336,7 +336,7 @@ function setupControls() {
 }
 
 function gameLoop() {
-    player.update();
+    //player.update();
     //coin.update();
     plateau.update();
     ground.update();
